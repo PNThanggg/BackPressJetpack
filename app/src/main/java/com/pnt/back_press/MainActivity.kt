@@ -20,20 +20,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.pnt.back_press.ui.theme.BackPressJetpackTheme
 import java.util.Stack
 
@@ -43,9 +50,6 @@ private const val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        
-
         setContent {
             BackPressJetpackTheme {
                 // A surface container using the 'background' color from the theme
@@ -58,18 +62,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun callbackGenerator(title: String) = object : OnBackPressedCallback(true) {
+    private fun callbackGenerator(title: String) = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
-            Log.e(TAG, "handleOnBackPressed:  $title")
+            Log.e(TAG, "handleOnBackPressed: $title")
         }
     }
 }
 
 @Composable
 fun MainScreen() {
+    val openDialog = remember { mutableStateOf(false) }
+    if (openDialog.value) {
+        ExitAppDialog(
+            openDialog,
+        )
+    }
+
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
     ) {
         val selected = remember { mutableStateOf(0) }
         val selectionStack = remember { Stack<Int>() }
@@ -78,12 +88,22 @@ fun MainScreen() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            BackInvokeHandler(handleBackHandler) {
-                selected.value = if (selectionStack.isEmpty()) 0 else selectionStack.pop()
+            BackInvokeHandler(true) {
+//                selected.value = if (selectionStack.isEmpty()) 0 else selectionStack.pop()
+//                openDialog.value = selectionStack.isNotEmpty()
+
+                Log.e(TAG, "MainScreen: ${openDialog.value}")
+                openDialog.value = true
+                Log.e(TAG, "MainScreen: ${openDialog.value}")
             }
         } else {
-            BackHandler(handleBackHandler) {
-                selected.value = if (selectionStack.isEmpty()) 0 else selectionStack.pop()
+            BackHandler(true) {
+//                selected.value = if (selectionStack.isEmpty()) 0 else selectionStack.pop()
+//                openDialog.value = selectionStack.isNotEmpty()
+
+                Log.e(TAG, "MainScreen: ${openDialog.value}")
+                openDialog.value = true
+                Log.e(TAG, "MainScreen: ${openDialog.value}")
             }
         }
 
@@ -94,16 +114,12 @@ fun MainScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(24) { index ->
-                BoxView(
-                    text = "$index",
-                    isSelected = selected.value == index,
-                    onClick = fun() {
-                        if (selected.value != index && !selectionStack.contains(selected.value)) {
-                            selectionStack.push(selected.value)
-                        }
-                        selected.value = index
+                BoxView(text = "$index", isSelected = selected.value == index, onClick = fun() {
+                    if (selected.value != index && !selectionStack.contains(selected.value)) {
+                        selectionStack.push(selected.value)
                     }
-                )
+                    selected.value = index
+                })
             }
         }
     }
@@ -135,10 +151,10 @@ fun BackInvokeHandler(
         }
 
     }
+
     if (handleBackHandler) {
         activity.onBackInvokedDispatcher.registerOnBackInvokedCallback(
-            priority,
-            backInvokedCallback
+            priority, backInvokedCallback
         )
     }
 
@@ -166,16 +182,13 @@ fun DefaultPreview() {
 
 @Composable
 fun BoxView(
-    text: String,
-    isSelected: Boolean = false,
-    onClick: () -> Unit = { }
+    text: String, isSelected: Boolean = false, onClick: () -> Unit = { }
 ) {
     Surface(
         modifier = Modifier.clickable { onClick() },
         shape = MaterialTheme.shapes.medium,
         border = BorderStroke(
-            width = 2.dp,
-            color = if (isSelected) {
+            width = 2.dp, color = if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
                 MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f)
@@ -186,8 +199,7 @@ fun BoxView(
             modifier = Modifier.size(64.dp)
         ) {
             Text(
-                modifier = Modifier.align(Alignment.Center),
-                text = text
+                modifier = Modifier.align(Alignment.Center), text = text
             )
         }
     }
